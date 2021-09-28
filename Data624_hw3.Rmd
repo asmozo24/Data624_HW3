@@ -1,0 +1,590 @@
+---
+title: "Data624_HW3"
+author: "Alexis Mekueko"
+date: "9/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r load-packages, results='hide',warning=FALSE, message=FALSE, echo=FALSE}
+
+##library(tidyverse) #loading all library needed for this assignment
+#remove.packages(tidyverse)
+#library(openintro)
+#library(lahman) #database for baseball
+library(caret)
+library(knitr)
+#library(markdown)
+#library(rmarkdown)
+library(dplyr)
+library(tidyr)
+library(naniar)
+library(reshape)
+library(ggplot2)
+library(qqplotr)
+library(stats)
+library(statsr)
+library(GGally)
+library(pdftools)
+library(correlation)
+library(Metrics)
+library(e1071)
+library(rocc)
+library(pROC)
+library(plm)
+library(car)
+#library(VIF)
+#library(MASS)
+#library(AICcmodavg)
+#library(gridExtra)
+#library(ggpubr)
+#library(glmulti)
+
+#install.packages("datarobot", dependencies = TRUE)
+
+library(datarobot)
+#install.packages("fpp3", dependencies = TRUE)
+library(fpp3)
+#install.packages("lubridate", dependencies = TRUE)
+library(lubridate)
+#install.packages("tsibble", dependencies = TRUE)
+library(tsibble)
+library(tsibbledata)
+#install.packages("USgas", dependencies = TRUE)
+#install.packages('Rcpp')
+library(Rcpp)
+#update.packages(Rcpp)
+library(USgas)
+library(MASS)
+library(forecast)
+set.seed(34332)
+
+```
+
+[Github Link](https://github.com/asmozo24/Data624_HW3)
+[Web Link](https://rpubs.com/amekueko/814927)
+
+# The Forecaster's Toolbox
+## Forecasting: (Principles and Practice)[https://otexts.com/fpp3/] by Rob J Hyndman and George Athanasopoulos
+
+
+## Exercise 1
+### Produce forecasts for the following series using whichever of NAIVE(y), SNAIVE(y) or RW(y ~ drift()) is more appropriate in each case:
+
+Australian Population (global_economy)
+Bricks (aus_production)
+NSW Lambs (aus_livestock)
+Household wealth (hh_budget).
+Australian takeaway food turnover (aus_retail).
+
+#### Many functions, including meanf(), naive(), snaive() and rwf(), produce output in the form of a forecast object (i.e., an object of class forecast). This allows other functions (such as autoplot()) to work consistently across a range of forecasting models. Objects of class forecast contain information about the forecasting method, the data used, the point forecasts obtained, prediction intervals, residuals and fitted values. There are several functions designed to work with these objects including autoplot(), summary() and print().
+
+#### The following list shows all the functions that produce forecast objects.
+
+meanf()
+naive(), snaive()
+rwf()
+croston()
+stlf()
+ses()
+holt(), hw()
+splinef()
+thetaf()
+forecast()
+
+#### NAIVE():For seasonal data, a related idea is to use the corresponding season from the last year of data. naive() is simply a wrapper to rwf() for simplicity. For naïve forecasts, we simply set all forecasts to be the value of the last observation,  a naïve forecast is optimal when data follow a random walk (see Section 9.1), these are also called random walk forecasts .
+
+#### SNAIVE() returns forecasts and prediction intervals from an ARIMA(0,0,0)(0,1,0)m model where m is the seasonal period.
+
+#### RW(y~ drift()): A variation on the naïve method is to allow the forecasts to increase or decrease over time, where the amount of change over time (called the drift) is set to be the average change seen in the historical data. This is equivalent to drawing a line between the first and last observations, and extrapolating it into the future
+
+
+1. Australian Population (global_economy)
+
+
+```{r mychunck1, fig.width = 10, fig.height = 10}
+
+# 
+# #Data preparation(tidy)
+# gdppc <- global_economy %>%
+#   mutate(GDP_per_capita = GDP / Population)
+# 
+# #Plot the data (visualise)
+# gdppc %>%
+#   filter(Country == "Sweden") %>%
+#   autoplot(GDP_per_capita) +
+#   labs(y = "$US", title = "GDP per capita for Sweden")
+# 
+# #Define a model (specify)
+# TSLM(GDP_per_capita ~ trend())
+# 
+# # Train the model(estimate)
+# fit <- gdppc %>%
+#   model(trend_model = TSLM(GDP_per_capita ~ trend()))
+# # see data
+# fit %>% forecast(h = "3 years")
+# 
+# #Produce forecasts (forecast)
+# fit %>%
+#     forecast(h = "3 years") %>%
+#                             filter(Country == "Sweden") %>%
+#                                                         autoplot(gdppc) +
+#                                                         labs(y = "$US", title = "GDP per capita for Sweden")
+
+global_economy %>%
+                filter(Country == "Australia") %>%
+                                               autoplot(Population) + 
+                                               labs(y = "Number of People", title = "Population of Australia from 1960 to 2020")
+
+print("Now that we have visualize the population trend, we can forecast for the next 5 years(short run) or 50 years(long run) using RW(y~ drift()).\n ")
+
+# australia_popu <- global_economy %>%
+#                                   filter(Country == "Australia")%>% 
+#                                                                   dplyr::select(Year, Population ) 
+#view(global_economy %>%
+#                filter(Country == "Australia"))
+#head(australia_popu)
+#view(australia_popu)
+#str(australia_popu)
+# australia_popu$Population <- as.numeric(australia_popu$Population)
+# time_serie <- ts(australia_popu[,2], frequency=10, start = c(1959, 01), end = c(2020, 10))
+# plot(time_serie)
+# # no need to train model
+# fit1 <- australia_popu %>%
+#                        model(trend_model = TSLM(Population ~ trend()))
+# 
+ # fit1 %>%
+ #     model(RW(Population ~ drift())) %>%
+ #                                      forecast(h = "5 years") %>%
+ #                                                         autoplot(australia_popu) +
+ #                                                         labs(y = "Number of People", title = "Population of Australia from 1960 to 2025")
+
+# Keep getting errors with above code , will try something different
+
+global_economy %>%
+               filter(Country == "Australia")%>%
+                                             model(RW(Population ~ drift())) %>%
+                                                                             forecast(h = "5 years") %>%
+                                                                                                     autoplot(global_economy) +
+                                                                                                     labs(y = "Number of People", title = "Population of Australia from 1960 to 2025")
+
+```
+### Bricks (aus_production)
+
+
+```{r mychunck2u, fig.width = 10, fig.height = 10}
+#str(aus_production)
+aus1 <- aus_production
+#sum(is.na(aus2$Bricks))
+# not good , need a fix...aus1 %>% filter(!is.na(Bricks))
+aus2 <- aus1 %>% na.omit(aus1$Bricks)
+#mydata = mydata[complete.cases(mydata), ]
+
+#aus1 %>% drop_na(Bricks)
+
+aus2 %>%
+     autoplot(Bricks)
+# something wrong with deleting na
+
+print("We have a random walk here. so we will use naive()n\ ")
+
+aus2 %>%
+     model(SNAIVE(Bricks ~ lag("year"))) %>%
+    forecast(h = 5) %>%
+     autoplot(aus2) +
+     labs(y = "Volume of Beer produced in megaliters", title = "Forecasts for Australian Quarterly Beer Production")
+
+
+# Set training data from 1992 to 2006
+train <- aus_production %>%
+  filter_index("1992 Q1" ~ "2006 Q4")
+# Fit the models
+beer_fit <- aus2 %>%
+  model(
+    Mean = MEAN(Beer),
+    `Naïve` = NAIVE(Beer),
+    `Seasonal naïve` = SNAIVE(Beer)
+  )
+# Generate forecasts for 14 quarters
+beer_fc <- beer_fit %>% forecast(h = 40)
+# Plot forecasts against actual values
+beer_fc %>%
+  autoplot(aus2, level = NULL) +
+  autolayer(
+    filter_index(aus_production, "2007 Q1" ~ .),
+    colour = "black"
+  ) +
+  labs(
+    y = "Megalitres",
+    title = "Forecasts for quarterly beer production"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+
+
+```
+
+## NSW Lambs (aus_livestock)
+
+```{r mychunck3, fig.width = 10, fig.height = 10}
+
+head(aus_livestock)
+#View(aus_livestock)
+#view(aus_livestock$Animal [18000:18100]) # %>% filter(Animal =="Lambs"))
+aus3 <- aus_livestock %>%
+                      filter(Animal == "Lambs", State == "New South Wales")
+
+#view(aus3)
+??aus_livestock
+aus3 %>%
+     autoplot(Count)+  
+     labs(y = "Number of Lambs Slaughtered", title = "Australian Lambs slaughtered from the state of New South Wales")
+
+print("This aus_livestock does not show a particular trend line, we will apply NAIVE(y), SNAIVE(y)")
+
+
+
+
+# Set training data from 2000 Jan to 2020 jan
+train <- aus3 %>%
+  filter_index("2000 Jan" ~ "2020 Jan")
+# Fit the models
+Lamb_fit <- train %>%
+  model(
+    Mean = MEAN(Count),
+    `Naïve` = NAIVE(Count),
+    `Seasonal naïve` = SNAIVE(Count)
+  )
+# Generate forecasts for 14 quarters
+Lamb_fc <- Lamb_fit %>% forecast(h = 20)
+# Plot forecasts against actual values
+Lamb_fc %>%
+  autoplot(train, level = NULL) +
+  autolayer(
+    filter_index(aus3, "2007 Q1" ~ .),
+    colour = "black"
+  ) +
+  labs(
+    y = "Number of Lambs Slaughtered",
+    title = "Australian Lambs slaughtered from the state of New South Wales"
+  ) +
+  guides(colour = guide_legend(title = "Forecast"))
+
+
+```
+
+### Household wealth (hh_budget).
+
+```{r mychunck4, fig.width = 10, fig.height = 10}
+
+#view(hh_budget)
+head(hh_budget)
+??hh_budget
+
+hh_budget %>%
+     autoplot(Wealth)+  
+     labs(y = "Wealth", title = "Household budget characteristics in USA, Autralia, Japan, Canada")
+print("We see clear trend line, for forecast we will use RW( ~ drift())")
+
+
+hh_budget %>%
+         model(RW(Wealth ~ drift())) %>%
+                                         forecast(h = "5 years") %>%
+                                                                 autoplot(hh_budget) +
+                                                                 labs(y = "Wealth", title = "Household budget characteristics in USA, Autralia, Japan, Canada")
+
+
+```
+## Australian takeaway food turnover (aus_retail).
+
+```{r mychunck5, fig.width = 10, fig.height = 10}
+
+#view(aus_retail)
+head(aus_retail)
+
+aus4 <- aus_retail %>% 
+                   filter(Industry == "Takeaway food services")
+??aus_retail
+aus4 %>%
+     autoplot(Turnover)+  
+     labs(y = "Retail turnover in $Million AU", title = "	Australian Retail Trade Turnover")
+print("There is an upward trend line, but this is not smooth, for forecast we will use NAIVE(y), SNAIVE(y), we will limit time from 2000 to 2020")
+
+# Set training data from 1992 to 2006
+train <- aus4 %>%
+  filter_index("2000 Jan" ~ "2020 Jan")
+# Fit the models
+Turnover_fit <- train %>%
+  model(
+    Mean = MEAN(Turnover),
+    `Naïve` = NAIVE(Turnover),
+    `Seasonal naïve` = SNAIVE(Turnover)
+  )
+# Generate forecasts for 14 quarters
+Turnover_fc <- Turnover_fit %>% forecast(h = 20)
+# Plot forecasts against actual values
+Turnover_fc %>%
+  autoplot(train, level = NULL) +
+  autolayer(
+    filter_index(aus4, "2000 Jan" ~ .),
+    colour = "black"
+  ) +
+     labs(y = "Retail turnover in $Million AU", title = "	Australian Retail Trade Turnover") +
+  guides(colour = guide_legend(title = "Forecast"))
+
+
+```
+
+
+## Exercice 2
+
+Use the Facebook stock price (data set gafa_stock) to do the following:
+
+## a-Produce a time plot of the series.
+Produce forecasts using the drift method and plot them.
+Show that the forecasts are identical to extending the line drawn between the first and last observations.
+Try using some of the other benchmark functions to forecast the same data set. Which do you think is best? Why?
+
+```{r mychunck6, fig.width = 10, fig.height = 10}
+??gafa_stock
+#view(gafa_stock)
+head(gafa_stock)
+facebook <- gafa_stock %>% 
+            filter(Symbol == 'FB')
+facebook %>% 
+         autoplot(High)+
+        labs(y = "The stock's highest trading price in $USD", title = "	Historical Stock Prices from 2014-2018 for Facebook")
+         
+
+```
+
+### b-Produce forecasts using the drift method and plot them.
+
+
+```{r mychunck6a, fig.width = 10, fig.height = 10}
+
+
+facebook1 <- facebook %>%
+        
+         mutate(High = as.numeric(facebook$High)) %>%
+         filter_index("2017-01-01" ~ "2018-01-01") %>%
+         mutate(day = row_number()) %>%
+         update_tsibble(index = day, regular = TRUE) %>%
+         dplyr::select(Date, High)
+
+facebook1 %>%
+         model(RW(High ~ drift())) %>%
+         forecast(h = 100) %>%
+         autoplot(facebook1) +
+         labs(y = "The stock's highest trading price in $USD", title = "	Forecast Facebook Stock Prices for 100 days based on 251 days of data colleted from 2017-03-Jan to 2017-29-Dec")
+
+print("This weather forecast is telling me to buy facebook stock")
+#          
+# view(facebook1)           
+# autoplot(facebook1) +
+#   #autolayer(meanf(facebook1, h=40),
+#    # series="Mean", PI=FALSE) +
+#   #autolayer(rwf(facebook1, h=40),
+#    # series="Naïve", PI=FALSE) +
+#   autolayer(rwf(facebook1, drift=TRUE, h=40),
+#     series="Drift", PI=FALSE) +
+#   ggtitle("	Historical Stock Prices from 2017-03-Jan to 2017-29-Dec for Facebook") +
+#   xlab("Day") + ylab("The stock's highest trading price in $USD") +
+#   guides(colour=guide_legend(title="Forecast"))
+
+
+```
+
+### c-Show that the forecasts are identical to extending the line drawn between the first and last observations
+
+```{r mychunck8, fig.width = 10, fig.height = 10}
+
+#min(facebook1$High)
+
+
+
+facebook1 %>%
+         model(RW(High ~ drift())) %>%
+         forecast(h = 100) %>%
+         autoplot(facebook1) +
+         geom_line(aes(x = day, y = High))+
+         geom_segment(aes (x = 1, y = 117.84, xend = 251, yend = 178.85 ))+
+         labs(y = "The stock's highest trading price in $USD", title = "	Forecast Facebook Stock Prices for 100 days based on 251 days of data colleted from 2017-03-Jan to 2017-29-Dec")
+
+print("Perfect match!!")
+
+```
+
+The drift method shows good result. This has something to do with the clear trend line, other method like naive() follows random walk.
+
+### d-Try using some of the other benchmark functions to forecast the same data set. Which do you think is best? Why?
+
+```{r mychunck9, fig.width = 10, fig.height = 10}
+
+# Set training data from 1992 to 2006
+#train <- aus4 %>%
+#  filter_index("2000 Jan" ~ "2020 Jan")
+# Fit the models
+#aus2 <- aus1 %>% na.omit(aus1$Bricks)
+#sum(is.na(facebook1$day))
+facebook_fit <- facebook1 %>%
+  model(
+    Mean = MEAN(High),
+    `Naïve` = NAIVE(High),
+    `Seasonal naïve` = SNAIVE(High)
+  )
+# Generate forecasts for 14 quarters
+facebook_fc <- facebook_fit %>% forecast(h = 100)
+# Plot forecasts against actual values
+facebook_fc %>%
+  autoplot(facebook1, level = NULL) +
+  autolayer(
+    filter_index(facebook1, "2017-03-01" ~ .),
+    colour = "black"
+  ) +
+    labs(y = "The stock's highest trading price in $USD", title = "	Forecast Facebook Stock Prices for 100 days based on 251 days of data colleted from 2017-03-Jan to 2017-29-Dec") +
+  guides(colour = guide_legend(title = "Forecast"))
+
+
+
+
+```
+
+## Exercise 3
+
+Apply a seasonal naïve method to the quarterly Australian beer production data from 1992. Check if the residuals look like white noise, and plot the forecasts. The following code will help
+
+```{r mychunck10, fig.width = 10, fig.height = 10}
+# Extract data of interest
+recent_production <- aus_production %>%
+  filter(year(Quarter) >= 1992)
+# Define and estimate a model
+fit <- recent_production %>% model(SNAIVE(Beer))
+# Look at the residuals
+fit %>% gg_tsresiduals()
+# Look a some forecasts
+fit %>% forecast() %>% autoplot(recent_production)
+
+```
+
+The “residuals” in a time series model are what is left over after fitting a model. The residuals are equal to the difference between the observations and the corresponding fitted values:
+The residuals shows normal distribution looking at the histogram with bimodal:
+.fitted contains the fitted values;
+.resid contains the residuals;
+.innov contains the “innovation residuals” which, in this case, are identical to the regular residuals.
+
+This is residual diagnostics shows our forecast model is good.
+
+## Exercise 4
+Repeat the previous exercise using the Australian Exports series from global_economy and the Bricks series from aus_production. Use whichever of NAIVE() or SNAIVE() is more appropriate in each case.
+
+```{r mychunck2r, fig.width = 10, fig.height = 10}
+
+
+#sum(is.na(global_economy$Exports))
+
+global_economy1 <- global_economy %>% na.omit(Exports)
+
+recent_export <-global_economy %>%
+                na.omit(Exports) %>%
+                filter(Country == "Australia", Year >= 2000)%>%
+                dplyr::select(Country, Year, Exports)
+#view(recent_export)                
+#view(global_economy) 
+# Extract data of interest
+#recent_production <- aus_production %>%
+#  filter(year(Quarter) >= 2000)
+# Define and estimate a model
+fit <- recent_export %>% model(SNAIVE(Exports))
+# Look at the residuals
+#fit %>% gg_tsresiduals()
+# Look a some forecasts
+fit %>% forecast(h =10) %>% autoplot(recent_export)
+
+print("I commented some code above (resid plots) tired of debugging it because keep getting error...> Error in na.contiguous.default(as.ts(x)) : all times contain an NA")
+
+#view(aus_production)
+fit1_brick <- aus_production %>% 
+                       dplyr::select(Quarter,Bricks)
+                       
+fit <- fit1_brick %>% model(SNAIVE(Bricks))
+fit %>% gg_tsresiduals()
+
+fit %>%
+     forecast(h = 10) %>%
+         autoplot(fit1_brick)
+
+```
+
+This residual shows a left skewed ditribution(uncorrelated and not normal distributed)...This forecast model (aus_production(Bricks)) is not goo.
+
+## Exercise 5
+
+For your retail time series (from Exercise 8 in Section 2.10):
+
+```{r mychunck2w, fig.width = 10, fig.height = 10}
+
+#view(aus_retail)
+
+myseries <- aus_retail %>%
+  filter(`Series ID` == sample(aus_retail$`Series ID`,1))
+
+myseries_train <- myseries %>%
+  filter(year(Month) < 2011)
+
+```
+
+Check that your data have been split appropriately by producing the following plot.
+
+```{r mychunck2s, fig.width = 10, fig.height = 10}
+autoplot(myseries, Turnover) +
+  autolayer(myseries_train, Turnover, colour = "red")
+
+```
+
+Fit a seasonal naïve model using SNAIVE() applied to your training data (myseries_train).
+```{r mychunck2wq, fig.width = 10, fig.height = 10}
+fit <- myseries_train %>% model(SNAIVE(Turnover))
+
+```
+
+Check the residuals.
+```{r mychunck2gg, fig.width = 10, fig.height = 10}
+fit %>% gg_tsresiduals()
+
+```
+
+The residual appears to be correlated (ACF plot) and normal distributed (resid plot). In addition, there are many outliers which means the residual variance is not constant. 
+
+
+Produce forecasts for the test data
+
+```{r mychunck2bg, fig.width = 10, fig.height = 10}
+fc <- fit %>%
+  forecast(new_data = anti_join(myseries, myseries_train))
+fc %>% autoplot(myseries)
+
+```
+
+Compare the accuracy of your forecasts against the actual values.
+
+
+```{r mychunck9h, fig.width = 10, fig.height = 10}
+fit %>% accuracy()
+
+```
+
+
+```{r mychunck6g, fig.width = 10, fig.height = 10}
+
+fc %>% accuracy(myseries)
+
+```
+
+The trained model has a higher RMSE than the actual data. A good way to choose the best forecasting model is to find the model with the smallest RMSE computed using time series cross-validation.Now, we trained the data using Snaive() methode which seems to be appropriate for the trend line. At this point, it is a little hard to say which approach will bring the best forecasting model.
+
+
